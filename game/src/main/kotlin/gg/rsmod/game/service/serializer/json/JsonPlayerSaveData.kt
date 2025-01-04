@@ -8,23 +8,29 @@ import gg.rsmod.game.model.varp.Varp
  *
  * @author Tom <rspsmods@gmail.com>
  */
-data class JsonPlayerSaveData(val username: String,
-                              val displayName: String,//imma try on local
-                              val passwordHash: String,
-                              val displayMode: Int,
-                              val privilege: Int,
-                              val runEnergy: Double,
-                              val x: Int,
-                              val z: Int,
-                              val height: Int,
-                              val previousXteas: IntArray,
-                              val appearance: JsonPlayerSerializer.PersistentAppearance,
-                              val attributes: Map<String, Any>,
-                              val timers: List<TimerMap.PersistentTimer>,
-                              val skills: List<JsonPlayerSerializer.PersistentSkill>,
-                              val itemContainers: List<JsonPlayerSerializer.PersistentContainer>,
-                              val varps: List<Varp>) {
-
+data class JsonPlayerSaveData(
+    val username: String,
+    val displayName: String, // imma try on local
+    val passwordHash: String,
+    val displayMode: Int,
+    val privilege: Int,
+    val runEnergy: Double,
+    val x: Int,
+    val z: Int,
+    val height: Int,
+    val previousXteas: IntArray,
+    val appearance: JsonPlayerSerializer.PersistentAppearance,
+    val attributes: Map<String, Any>,
+    val timers: List<TimerMap.PersistentTimer>,
+    val skills: List<JsonPlayerSerializer.PersistentSkill>,
+    val itemContainers: List<JsonPlayerSerializer.PersistentContainer>,
+    val varps: List<Varp>,
+    val friends: MutableList<String>?,
+    val ignoredPlayers: MutableList<String>?,
+    val privateFilterSetting: Int?,
+    val publicFilterSetting: Int?,
+    val tradeFilterSetting: Int?,
+) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -46,6 +52,11 @@ data class JsonPlayerSaveData(val username: String,
         if (skills != other.skills) return false
         if (itemContainers != other.itemContainers) return false
         if (varps != other.varps) return false
+        if (friends != other.friends) return false
+        if (ignoredPlayers != other.ignoredPlayers) return false
+        if (publicFilterSetting != other.publicFilterSetting) return false
+        if (privateFilterSetting != other.privateFilterSetting) return false
+        if (tradeFilterSetting != other.tradeFilterSetting) return false
         return true
     }
 
@@ -66,6 +77,11 @@ data class JsonPlayerSaveData(val username: String,
         result = 31 * result + skills.hashCode()
         result = 31 * result + itemContainers.hashCode()
         result = 31 * result + varps.hashCode()
+        result = 31 * result + friends.hashCode()
+        result = 31 * result + ignoredPlayers.hashCode()
+        result = 31 * result + publicFilterSetting.hashCode()
+        result = 31 * result + privateFilterSetting.hashCode()
+        result = 31 * result + tradeFilterSetting.hashCode()
         return result
     }
 }

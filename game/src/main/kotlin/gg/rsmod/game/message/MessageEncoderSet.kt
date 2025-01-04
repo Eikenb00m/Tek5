@@ -10,7 +10,6 @@ import gg.rsmod.game.message.impl.*
  * @author Tom <rspsmods@gmail.com>
  */
 class MessageEncoderSet {
-
     /**
      * The [MessageEncoder]s stored in respect to their [Message] class.
      */
@@ -68,9 +67,19 @@ class MessageEncoderSet {
         put(MidiSongEncoder(), MidiSongMessage::class.java)
         put(MapAnimEncoder(), MapAnimMessage::class.java)
         put(LocAnimEncoder(), LocAnimMessage::class.java)
+        put(FriendListLoadedEncoder(), FriendListLoadedMessage::class.java)
+        put(UpdateFriendListEncoder(), UpdateFriendListMessage::class.java)
+        put(MessagePrivateReceivedEncoder(), MessagePrivateReceivedMessage::class.java)
+        put(SetPublicTradeChatFilterEncoder(), SetPublicTradeChatFilterMessage::class.java)
+        put(SetPrivateChatFilterEncoder(), SetPrivateChatFilterMessage::class.java)
+        put(MessagePrivateSentEncoder(), MessagePrivateSentMessage::class.java)
+        put(UpdateIgnoreListEncoder(), UpdateIgnoreListMessage::class.java)
     }
 
-    private fun <T : Message> put(encoder: MessageEncoder<T>, message: Class<out T>) {
+    private fun <T : Message> put(
+        encoder: MessageEncoder<T>,
+        message: Class<out T>,
+    ) {
         encoders[message] = encoder
     }
 

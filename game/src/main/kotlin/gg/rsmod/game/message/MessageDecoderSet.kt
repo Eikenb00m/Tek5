@@ -11,7 +11,6 @@ import gg.rsmod.game.message.impl.*
  * @author Tom <rspsmods@gmail.com>
  */
 class MessageDecoderSet {
-
     /**
      * The [MessageDecoder]s stored in respect to their opcode.
      */
@@ -66,16 +65,26 @@ class MessageDecoderSet {
 
         put(WorldMapCloseMessage::class.java, WorldMapCloseDecoder(), WorldMapCloseHandler(), structures)
         put(KeyTypedMessage::class.java, KeyTypedDecoder(), KeyTypedHandler(), structures)
+
+        put(FriendListAddMessage::class.java, FriendListAddDecoder(), FriendListAddHandler(), structures)
+        put(FriendListDeleteMessage::class.java, FriendListDeleteDecoder(), FriendListDeleteHandler(), structures)
+        put(MessagePrivateMessage::class.java, MessagePrivateDecoder(), MessagePrivateHandler(), structures)
+        put(ChatFilterMessage::class.java, ChatFilterDecoder(), ChatFilterHandler(), structures)
+        put(IgnoreListAddMessage::class.java, IgnoreListAddDecoder(), IgnoreListAddHandler(), structures)
+        put(IgnoreListDeleteMessage::class.java, IgnoreListDeleteDecoder(), IgnoreListDeleteHandler(), structures)
+        
+        put(SoundSongEndMessage::class.java, SoundSongEndDecoder(), SoundSongEndHandler(), structures)
     }
 
     private fun <T : Message> put(
         messageType: Class<T>,
         decoderType: MessageDecoder<T>,
         handlerType: MessageHandler<T>,
-        structures: MessageStructureSet
+        structures: MessageStructureSet,
     ) {
-        val structure = structures.get(messageType)
-            ?: throw RuntimeException("Message structure has not been set in packets file. [message=$messageType]")
+        val structure =
+            structures.get(messageType)
+                ?: throw RuntimeException("Message structure has not been set in packets file. [message=$messageType]")
         structure.opcodes.forEach { opcode ->
             decoders[opcode] = decoderType
             handlers[opcode] = handlerType

@@ -8,6 +8,7 @@ import gg.rsmod.game.model.entity.Player
 import gg.rsmod.game.model.item.Item
 import gg.rsmod.game.service.Service
 
+
 /**
  * A [Service] responsible for logging in-game events when requested.
  *
@@ -17,25 +18,61 @@ import gg.rsmod.game.service.Service
  *
  * @author Tom <rspsmods@gmail.com>
  */
-interface LoggerService : Service {
 
-    fun logPacket(client: Client, message: String)
+interface LoggerService : Service {
+    fun logPacket(
+        client: Client,
+        message: String,
+    )
 
     fun logLogin(player: Player)
 
-    fun logPublicChat(player: Player, message: String)
+    fun logPublicChat(
+        player: Player,
+        message: String,
+    )
 
-    fun logClanChat(player: Player, clan: String, message: String)
+    fun logPrivateChat(
+        fromPlayer: Player,
+        toPlayer: Player,
+        message: String
+    )
 
-    fun logCommand(player: Player, command: String, vararg args: String)
+    fun logClanChat(
+        player: Player,
+        clan: String,
+        message: String,
+    )
 
-    fun logItemDrop(player: Player, item: Item, slot: Int)
+    fun logCommand(
+        player: Player,
+        command: String,
+        vararg args: String,
+    )
 
-    fun logItemPickUp(player: Player, item: Item)
+    fun logItemDrop(
+        player: Player,
+        item: Item,
+        slot: Int,
+    )
 
-    fun logNpcKill(player: Player, npc: Npc)
+    fun logItemPickUp(
+        player: Player,
+        item: Item,
+    )
 
-    fun logPlayerKill(killer: Player, killed: Player)
+    fun logNpcKill(
+        player: Player,
+        npc: Npc,
+    )
 
-    fun logEvent(pawn: Pawn, event: Event)
+    fun logPlayerKill(
+        killer: Player,
+        killed: Player,
+    )
+
+    fun logEvent(
+        pawn: Pawn,
+        event: Event,
+    )
 }

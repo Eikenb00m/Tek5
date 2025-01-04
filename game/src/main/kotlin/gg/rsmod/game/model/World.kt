@@ -30,6 +30,7 @@ import gg.rsmod.game.plugin.Plugin
 import gg.rsmod.game.plugin.PluginRepository
 import gg.rsmod.game.service.GameService
 import gg.rsmod.game.service.Service
+import gg.rsmod.game.service.serializer.json.JsonPlayerSerializer
 import gg.rsmod.game.service.xtea.XteaKeyService
 import gg.rsmod.game.sync.block.UpdateBlockSet
 import gg.rsmod.util.HuffmanCodec
@@ -51,10 +52,16 @@ import java.util.concurrent.TimeUnit
  *
  * @author Tom <rspsmods@gmail.com>
  */
-data class TemporaryGameObject(val gameObject: GameObject, var timer: Int, val oldObj: GameObject?)
+data class TemporaryGameObject(
+    val gameObject: GameObject,
+    var timer: Int,
+    val oldObj: GameObject?,
+)
 
-class World(val gameContext: GameContext, val devContext: DevContext) {
-
+class World(
+    val gameContext: GameContext,
+    val devContext: DevContext,
+) {
     /**
      * The [Store] is responsible for handling the data in our cache.
      */
@@ -113,6 +120,8 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
      * when [XteaKeyService.init] is called.
      */
     var xteaKeyService: XteaKeyService? = null
+
+    var jsonPlayerSerializer: JsonPlayerSerializer? = null
 
     /**
      * The [UpdateBlockSet] for players.
@@ -214,6 +223,11 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
      */
     val playersWithBonusXP = mutableSetOf<String>()
 
+    /**
+     * Message count used for creating unique IDs for private messages.
+     * Starts at a random value between 0 and 65535.
+     */
+    var messageCount = random(0..0xFFFF)
 
     internal fun init() {
         getService(GameService::class.java)?.let { service ->
@@ -257,7 +271,6 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
          */
         timers.getTimers().entries.forEach { timer -> timer.setValue(timer.value - 1) }
 
-
         // Cycle through temporary game objects and remove them when their timers reach zero.
         val tempObjectsToRemove = mutableListOf<TemporaryGameObject>()
         temporaryObjects.forEach { tempObj ->
@@ -292,7 +305,10 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             val remainPrivate = !definitions.get(ItemDef::class.java, groundItem.item).tradeable
             groundItem.currentCycle++
 
-            if ((groundItem.isPublic() || remainPrivate) && groundItem.currentCycle >= gameContext.gItemDespawnDelay && groundItem.respawnCycles == -1) {
+            if ((groundItem.isPublic() || remainPrivate) &&
+                groundItem.currentCycle >= gameContext.gItemDespawnDelay &&
+                groundItem.respawnCycles == -1
+            ) {
                 /*
                  * If the ground item is public and its cycle count has reached the
                  * despawn delay set by our game, we add it to our removal queue.
@@ -303,7 +319,7 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
                  * If the ground item is not public, but its cycle count has
                  * reached the public delay set by our game, we make it public.
                  */
-                if(!remainPrivate) {
+                if (!remainPrivate) {
                     groundItem.removeOwner()
                     chunks.get(groundItem.tile)?.let { chunk ->
                         chunk.removeEntity(this, groundItem, groundItem.tile)
@@ -407,7 +423,11 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     fun spawn(obj: GameObject) {
         val tile = obj.tile
         val chunk = chunks.getOrCreate(tile)
-        val oldObj = chunk.getEntities<GameObject>(tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT).firstOrNull { it.type == obj.type }
+        val oldObj =
+            chunk.getEntities<GameObject>(tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT).firstOrNull {
+                it.type ==
+                    obj.type
+            }
         if (oldObj != null) {
             chunk.removeEntity(this, oldObj, tile)
         }
@@ -421,7 +441,11 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         chunk.removeEntity(this, obj, tile)
     }
 
-    fun spawnTemporaryObject(obj: GameObject, time: Int, oldObj: GameObject? = null) {
+    fun spawnTemporaryObject(
+        obj: GameObject,
+        time: Int,
+        oldObj: GameObject? = null,
+    ) {
         val temporaryObject = TemporaryGameObject(obj, time, oldObj)
         temporaryObjects.add(temporaryObject)
         spawn(DynamicObject(obj))
@@ -434,7 +458,11 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         val def = definitions.get(ItemDef::class.java, item.item)
 
         if (def.stackable) {
-            val oldItem = chunk.getEntities<GroundItem>(tile, EntityType.GROUND_ITEM).firstOrNull { it.item == item.item && it.ownerUID == item.ownerUID }
+            val oldItem =
+                chunk.getEntities<GroundItem>(tile, EntityType.GROUND_ITEM).firstOrNull {
+                    it.item == item.item &&
+                        it.ownerUID == item.ownerUID
+                }
             if (oldItem != null) {
                 val oldAmount = oldItem.amount
                 val newAmount = Math.min(Int.MAX_VALUE.toLong(), item.amount.toLong() + oldItem.amount.toLong()).toInt()
@@ -501,9 +529,15 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         }
     }
 
-    fun isSpawned(obj: GameObject): Boolean = chunks.getOrCreate(obj.tile).getEntities<GameObject>(obj.tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT).contains(obj)
+    fun isSpawned(obj: GameObject): Boolean =
+        chunks
+            .getOrCreate(
+                obj.tile,
+            ).getEntities<GameObject>(obj.tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT)
+            .contains(obj)
 
-    fun isSpawned(item: GroundItem): Boolean = chunks.getOrCreate(item.tile).getEntities<GroundItem>(item.tile, EntityType.GROUND_ITEM).contains(item)
+    fun isSpawned(item: GroundItem): Boolean =
+        chunks.getOrCreate(item.tile).getEntities<GroundItem>(item.tile, EntityType.GROUND_ITEM).contains(item)
 
     /**
      * Get any [GroundItem] that matches the [predicate].
@@ -519,7 +553,20 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
      * @return
      * null if no [GameObject] with [type] was found in [tile].
      */
-    fun getObject(tile: Tile, type: ObjectType): GameObject? = chunks.get(tile, createIfNeeded = true)!!.getEntities<GameObject>(tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT).firstOrNull { it.type == type.value }
+    fun getObject(
+        tile: Tile,
+        type: ObjectType,
+    ): GameObject? =
+        chunks
+            .get(
+                tile,
+                createIfNeeded = true,
+            )!!
+            .getEntities<GameObject>(tile, EntityType.STATIC_OBJECT, EntityType.DYNAMIC_OBJECT)
+            .firstOrNull {
+                it.type ==
+                    type.value
+            }
 
     fun getPlayerForName(username: String): Player? {
         for (i in 0 until players.capacity) {
@@ -531,16 +578,15 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         return null
     }
 
-    fun getAnimationDelay(animationId: Int) : Int {
+    fun getAnimationDelay(animationId: Int): Int {
         return definitions.get(AnimDef::class.java, animationId).cycleLength + 1
     }
 
-    fun getAnimationFrames(animationId: Int) : Int {
+    fun getAnimationFrames(animationId: Int): Int {
         return definitions.get(AnimDef::class.java, animationId).frameLength
     }
 
     fun getPlayerForUid(uid: PlayerUID): Player? = players.firstOrNull { it.uid.value == uid.value }
-
 
     fun getShop(name: String): Shop? = plugins.shops.getOrDefault(name, null)
 
@@ -554,7 +600,10 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
 
     fun randomDouble(): Double = random.nextDouble()
 
-    fun chance(chance: Int, probability: Int): Boolean {
+    fun chance(
+        chance: Int,
+        probability: Int,
+    ): Boolean {
         check(chance in 1..probability) { "Chance must be within range of (0 - probability]" }
         return random.nextInt(probability) <= chance - 1
     }
@@ -564,7 +613,12 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         return random.nextDouble() <= (chance / 100.0)
     }
 
-    fun findRandomTileAround(centre: Tile, radius: Int, centreWidth: Int = 0, centreLength: Int = 0): Tile? {
+    fun findRandomTileAround(
+        centre: Tile,
+        radius: Int,
+        centreWidth: Int = 0,
+        centreLength: Int = 0,
+    ): Tile? {
         val tiles = mutableListOf<Tile>()
         for (x in -radius..radius) {
             for (z in -radius..radius) {
@@ -585,31 +639,43 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         queues.queue(this, coroutineDispatcher, TaskPriority.STANDARD, logic)
     }
 
-    fun executePlugin(ctx: Any, logic: (Plugin).() -> Unit) {
+    fun executePlugin(
+        ctx: Any,
+        logic: (Plugin).() -> Unit,
+    ) {
         val plugin = Plugin(ctx)
         logic(plugin)
     }
 
-    fun sendExamine(p: Player, id: Int, type: ExamineEntityType) {
+    fun sendExamine(
+        p: Player,
+        id: Int,
+        type: ExamineEntityType,
+    ) {
         try {
-            val examine = when (type) {
-                ExamineEntityType.ITEM -> definitions.get(ItemDef::class.java, id).examine
-                ExamineEntityType.NPC -> definitions.get(NpcDef::class.java, id).examine
-                ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).examine
-            }
+            val examine =
+                when (type) {
+                    ExamineEntityType.ITEM -> definitions.get(ItemDef::class.java, id).examine
+                    ExamineEntityType.NPC -> definitions.get(NpcDef::class.java, id).examine
+                    ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).examine
+                }
 
-            val interactive  = when (type) {
-                ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).interactive
-                else -> null
-            }
-            val solid  = when (type) {
-                ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).solid
-                else -> null
-            }
+            val interactive =
+                when (type) {
+                    ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).interactive
+                    else -> null
+                }
+            val solid =
+                when (type) {
+                    ExamineEntityType.OBJECT -> definitions.get(ObjectDef::class.java, id).solid
+                    else -> null
+                }
             if (examine != null) {
                 val extension = if (devContext.debugExamines) " ($id)" else ""
                 p.writeMessage(examine + extension)
-                p.writeConsoleMessage("Object Definition id: $id, type: $type, interactive: $interactive, solid: $solid")
+                p.writeConsoleMessage(
+                    "Object Definition id: $id, type: $type, interactive: $interactive, solid: $solid",
+                )
             } else {
                 logger.warn { "No examine info found for entity [type: $type, id: $id, interactive: $interactive, solid: $solid]" }
             }
@@ -632,6 +698,21 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
         }
     }
 
+    fun characterExists(username: String): Boolean {
+        if (jsonPlayerSerializer == null) {
+            jsonPlayerSerializer = getService(JsonPlayerSerializer::class.java)
+        }
+
+        return jsonPlayerSerializer!!.characterExists(username.lowercase())
+    }
+
+    fun getNextMessageCount(): Int {
+        val currCount = messageCount
+        messageCount += 1 % 0xFFFF
+
+        return currCount
+    }
+
     /**
      * Gets the first service that can be found which meets the criteria of:
      *
@@ -639,7 +720,10 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
      * When [searchSubclasses] is false: the service class must be equal to the [type].
      */
     @Suppress("UNCHECKED_CAST")
-    fun <T : Service> getService(type: Class<out T>, searchSubclasses: Boolean = false): T? {
+    fun <T : Service> getService(
+        type: Class<out T>,
+        searchSubclasses: Boolean = false,
+    ): T? {
         if (searchSubclasses) {
             return services.firstOrNull { type.isAssignableFrom(it::class.java) } as T?
         }
@@ -649,7 +733,10 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     /**
      * Loads all the services listed on our game properties file.
      */
-    internal fun loadServices(server: Server, gameProperties: ServerProperties) {
+    internal fun loadServices(
+        server: Server,
+        gameProperties: ServerProperties,
+    ) {
         val stopwatch = Stopwatch.createUnstarted()
         val foundServices = gameProperties.get<ArrayList<Any>>("services")!!
         foundServices.forEach { s ->
@@ -668,7 +755,11 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
             stopwatch.stop()
 
             services.add(service)
-            logger.info("Initiated service '{}' in {}ms.", service.javaClass.simpleName, stopwatch.elapsed(TimeUnit.MILLISECONDS))
+            logger.info(
+                "Initiated service '{}' in {}ms.",
+                service.javaClass.simpleName,
+                stopwatch.elapsed(TimeUnit.MILLISECONDS),
+            )
         }
         services.forEach { s -> s.postLoad(server, this) }
         logger.info("Loaded {} game services.", services.size)
@@ -697,7 +788,6 @@ class World(val gameContext: GameContext, val devContext: DevContext) {
     }
 
     companion object : KLogging() {
-
         /**
          * If the [rebootTimer] is active and is less than this value, we will
          * begin to reject any log-in.

@@ -190,7 +190,6 @@ val INTERACTING_ITEM_SLOT = AttributeKey<Int>()
  */
 val INTERACTING_ITEM_ID = AttributeKey<Int>()
 
-
 /**
  * The id of the interacting button.
  */
@@ -303,7 +302,6 @@ val LAST_KNOWN_RUN_STATE = AttributeKey<Int>()
  * The type of weapon the player is holding
  */
 val LAST_KNOWN_WEAPON_TYPE = AttributeKey<Int>()
-
 
 /**
  * The type of bar the player is smithing
@@ -485,7 +483,6 @@ val SLAYER_AMOUNT = AttributeKey<Int>(persistenceKey = "slayer_amount")
  */
 val CONSECUTIVE_SLAYER_TASKS = AttributeKey<Int>(persistenceKey = "consecutive_slayer_tasks")
 
-
 /**
  * The list of block monsters from slayer assignments
  */
@@ -534,7 +531,7 @@ val RANDOM_EVENT_GIFT_SLOT = AttributeKey<Int>()
 /**
  * The lost city attribute
  */
- 
+
 val HAS_SPAWNED_TREE_SPIRIT = AttributeKey<Int>()
 
 /**
@@ -542,3 +539,28 @@ val HAS_SPAWNED_TREE_SPIRIT = AttributeKey<Int>()
  * Since keys are always strings, we must have our key as a String here too
  */
 val NPC_KILL_COUNTS = AttributeKey<MutableMap<String, Int>>(persistenceKey = "npc_kill_counts")
+
+/**
+ * An [AttributeKey] containing the name of the player that was added
+ */
+val ADDED_FRIEND = AttributeKey<String>()
+
+/**
+ * An [AttributeKey] containing the name of the player that was deleted
+ */
+val DELETED_FRIEND = AttributeKey<String>()
+
+/**
+ * An [AttributeKey] containing the name of the player that was added to the ignore list
+ */
+val ADDED_IGNORE = AttributeKey<String>()
+
+/**
+ * An [AttributeKey] containing the name of the player that was deleted from the ignore list
+ */
+val DELETED_IGNORE = AttributeKey<String>()
+
+/**
+ * The ID of the last song that ended
+ */
+val LAST_SONG_END = AttributeKey<Int>()
